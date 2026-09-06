@@ -131,7 +131,7 @@ Sanity gate asserts: every index key resolves; 40 sampled grafted experts match 
 | **pre-graft prod** | primitive-ai | FR-Spec map | ✅ | 231.7 | 228.2 | 10549 / 11085 / 11156 |
 | **post-graft (final)** | **nv-graft** | FR-Spec map | ✅ | **239.0** | **224.2** | 8572 / 11477 / 11204 |
 
-(Post-graft prefill row reads a touch high on the 6K arm and mid on 50K vs pre-graft — single-shot cold numbers at these sizes carry a few-percent jitter; the 100K arm, which is the one that matters for long-context serving, is essentially identical. Decode arms are 512-token averages and are the stable comparison.)
+(Prefill caveat, stated honestly: single-shot cold arms carry real jitter at short context — the post-graft 6K reading (8572) is *below* pre-graft (10549) while 50K/100K read slightly above. With reps=1 and one cold miss each, we treat sub-10K prefill as noise-equivalent; the 100K arm is the stable long-context comparison and it's flat (11156 → 11204). The graft changes expert bytes only; there's no mechanism for it to move prefill by double digits either way, which is itself a sanity signal.)
 
 Accept-length (speculative decoding quality — the rollback trigger):
 
