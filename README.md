@@ -12,6 +12,33 @@ Cutover landed cleanly. Headline: **decode 232 → 239 t/s** under the same spec
 
 ---
 
+## Quickstart
+
+**Prereqs:** both checkpoints on disk (fetch with `hf download nvidia/Qwen3.8-Flash-Next-NVFP4` and `hf download primitive-ai/Qwen3.8-Flash-Next-NVFP4`), a Python with `safetensors`+`torch`, ~65 GB free, ~10 GB peak RAM. Sources are never written.
+
+```bash
+git clone https://github.com/brakthehack/nv-graft && cd nv-graft
+
+# 1. build the graft dir (~20 min)         -> last log line: GRAFT_BUILD_DONE
+NV_DIR=/models/nvidia/Qwen3.8-Flash-Next-NVFP4 PA_DIR=/models/primitive-ai/Qwen3.8-Flash-Next-NVFP4 \
+OUT_DIR=/models/nv-graft bash scripts/run_nv_graft_build.sh
+
+# 2. sanity gate                            -> prints: VERDICT: GRAFT-SANE
+NV_DIR=/models/nvidia/Qwen3.8-Flash-Next-NVFP4 PA_DIR=/models/primitive-ai/Qwen3.8-Flash-Next-NVFP4 \
+OUT_DIR=/models/nv-graft python3 scripts/nv_graft_sanity.py
+
+# 3. point your server at OUT_DIR (edit unit's --model-path, restart, wait for /health_generate 200)
+#    or run scripts/nv-graft-cutover.sh for the health-gated auto-rollback version — see "Reproduce the graft"
+
+# 4. benchmark                             -> decode/prefill JSON lines, see Benchmarks
+BASE_URL=http://127.0.0.1:8086 MODEL=qwen38-flashnext TOKDIR=/models/primitive-ai/Qwen3.8-Flash-Next-NVFP4 \
+python3 scripts/perf_probe.py
+```
+
+Stop if step 1 doesn't end `GRAFT_BUILD_DONE` or step 2 doesn't print `GRAFT-SANE` — either failure means the graft dir is not loadable and nothing has touched your server.
+
+---
+
 ## Hardware & software spec (the box these numbers came from)
 
 - GPU: NVIDIA RTX PRO 6000 Blackwell Workstation Edition (96 GB VRAM), driver 610.43.03, `tp=1`
