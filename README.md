@@ -92,6 +92,39 @@ Notes on reproducibility:
 - YaRN override (262144 → 384000 ctx, factor 2.0) is the production context recipe; without it the server boots at native 262K.
 - The final cutover additionally **stripped `--expert-distribution-recorder-mode stat`** (leftover MoE profiling instrumentation — see the delta table below).
 
+## The final command (post-graft production)
+
+The version the box actually runs after cutover — identical to the base command except `--model-path` now points at the graft dir (`OUT_DIR`) and `--expert-distribution-recorder-mode stat` is gone. Verified verbatim against the live unit:
+
+```bash
+python -m sglang.launch_server \
+  --model-path <graft dir (OUT_DIR)> \
+  --load-format safetensors --served-model-name qwen38-flashnext \
+  --host 0.0.0.0 --port 8086 \
+  --tp 1 --dtype bfloat16 --quantization modelopt_fp4 --kv-cache-dtype bf16 \
+  --mem-fraction-static 0.981 --context-length 384000 \
+  --json-model-override-args '{"text_config":{"rope_parameters":{"mrope_interleaved":true,"mrope_section":[11,11,10],"rope_type":"yarn","rope_theta":10000000,"partial_rotary_factor":0.25,"factor":2.0,"original_max_position_embeddings":262144}}}' \
+  --page-size 64 --max-running-requests 4 --sleep-on-idle --chunked-prefill-size 4096 \
+  --mamba-radix-cache-strategy extra_buffer --mamba-ssm-dtype bfloat16 --max-mamba-cache-size 24 \
+  --gdn-mtp-cache-mode none --linear-attn-decode-backend flashinfer --linear-attn-prefill-backend flashinfer \
+  --mamba-track-interval 64 \
+  --enable-hierarchical-cache --hicache-size 32 --hicache-host-memory-mode cache \
+  --hicache-write-policy write_through --hicache-io-backend kernel --hicache-mem-layout page_first \
+  --hicache-storage-backend nixl --hicache-storage-prefetch-policy timeout \
+  --hicache-storage-backend-extra-config @<nixl-posix backend toml> \
+  --ple-offload-embedding --trust-remote-code \
+  --chat-template <graft dir>/chat_template.jinja \
+  --reasoning-parser qwen3 --tool-call-parser qwen3_coder \
+  --enable-request-time-stats-logging --enable-metrics \
+  --default-chat-template-kwargs '{"enable_thinking":true,"preserve_thinking":true,"reasoning_effort":"medium"}' \
+  --speculative-algorithm NEXTN --speculative-num-steps 3 --speculative-eagle-topk 1 \
+  --speculative-num-draft-tokens 4 --speculative-draft-model-quantization unquant \
+  --speculative-token-map <fr-spec token map .pt> \
+  --watchdog-timeout 1800
+```
+
+(Our unit additionally pins `HF_HUB_OFFLINE=1` and redirects all compiler/HF caches to a local dir — operational hygiene, not part of the graft. The live `--chat-template` still names the primitive-ai path directly; the graft dir's `chat_template.jinja` is a symlink to the same bytes, so either path is equivalent.)
+
 ## The interesting finding: two "identical" checkpoints disagree exactly where you don't look
 
 Both repos claim to ship the same NVFP4 model. Their index key sets:
