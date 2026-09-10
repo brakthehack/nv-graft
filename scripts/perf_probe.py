@@ -21,7 +21,9 @@ import json, os, time, urllib.request, sys, random, string
 
 URL = os.environ.get("BASE_URL", "http://127.0.0.1:8086")
 MODEL = os.environ.get("MODEL", "qwen38-flashnext")
-TOKDIR = os.environ.get("TOKDIR", sys.exit("TOKDIR required: tokenizer dir"))
+TOKDIR = os.environ.get("TOKDIR")
+if not TOKDIR:
+    sys.exit("TOKDIR required: tokenizer dir")
 
 _TOK = None
 def count_tokens(text):
