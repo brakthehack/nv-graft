@@ -6,7 +6,7 @@ Get NVIDIA's re-calibrated NVFP4 experts into a checkpoint your serving stack ca
 
 You serve an NVFP4 model that loads fine from a community checkpoint (primitive-ai), but NVIDIA has republished it with better expert calibration — in a tensor layout your loader can't parse. Grafting gives you both: NVIDIA's expert bytes inside the loadable skeleton, including its fused MTP drafter. ~64 GB output, near-zero copies (symlink farm), both sources stay read-only, rollback is a file copy + restart. On our box: +3% decode, speculative acceptance unchanged.
 
-The pattern generalizes to any two same-recipe quantized checkpoints where one has better calibration and the other has the layout your loader parses.
+**Scope: tested only on Qwen3.8-Flash-Next-NVFP4** (nvidia's and primitive-ai's builds of it). The scripts key off that checkpoint pair's layout — nothing here has been run against any other model. The *pattern* (graft re-calibrated experts onto a loadable skeleton) should generalize to any two same-recipe quantized checkpoints, but consider that a hypothesis, not support: expect to adapt the graft scope (`.mlp.experts.` matching, fused-vs-per-expert asymmetry handling) and re-verify with the sanity gate before serving anything else.
 
 ## How
 

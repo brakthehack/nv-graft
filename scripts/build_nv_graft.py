@@ -16,6 +16,11 @@ repacked into nv-experts-partNN.safetensors; the index is rewritten.
 Read-only on both sources. CPU/disk only, ~65 GB output.
 Run with a python that has safetensors + torch installed.
 
+SUPPORTED MODELS: tested only on the nvidia/ + primitive-ai builds of
+Qwen3.8-Flash-Next-NVFP4. The graft scope below (".mlp.experts." key matching,
+PA-only fused-MTP handling) is specific to that pair; on any other checkpoint
+this is untested code -- adapt scope and pass the sanity gate before serving.
+
 Config:
   NV_DIR   (required) NVIDIA NVFP4 checkpoint dir
   PA_DIR   (required) primitive-ai NVFP4 checkpoint dir
