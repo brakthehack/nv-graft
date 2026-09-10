@@ -24,8 +24,9 @@ NV_DIR=/models/nvidia/Qwen3.8-Flash-Next-NVFP4 PA_DIR=/models/primitive-ai/Qwen3
 OUT_DIR=/models/nv-graft bash scripts/run_nv_graft_build.sh
 
 # 2. sanity gate                            -> prints: VERDICT: GRAFT-SANE
+#    (redirect matters: step 3's cutover script gates on this file existing)
 NV_DIR=/models/nvidia/Qwen3.8-Flash-Next-NVFP4 PA_DIR=/models/primitive-ai/Qwen3.8-Flash-Next-NVFP4 \
-OUT_DIR=/models/nv-graft python3 scripts/nv_graft_sanity.py
+OUT_DIR=/models/nv-graft python3 scripts/nv_graft_sanity.py > /tmp/nv-graft-sanity.out
 
 # 3. point your server at OUT_DIR (edit unit's --model-path, restart, wait for /health_generate 200)
 #    or run scripts/nv-graft-cutover.sh for the health-gated auto-rollback version — see "Reproduce the graft"

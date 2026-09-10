@@ -99,7 +99,7 @@ for k, v in idx_p.items():
         new_idx[k] = v
         src = os.path.join(P, v)
         dst = os.path.join(OUT, v)
-        if not os.path.exists(dst):
+        if not os.path.lexists(dst):  # lexists: a BROKEN symlink from a stale build still occupies the name
             os.symlink(src, dst)
 json.dump({"metadata": {"total_size": json.load(open(P + "/model.safetensors.index.json"))["metadata"]["total_size"]}, "weight_map": new_idx},
           open(os.path.join(OUT, "model.safetensors.index.json"), "w"), indent=2)
@@ -109,7 +109,7 @@ for fn in os.listdir(P):
     if fn.endswith(".safetensors") or fn == "model.safetensors.index.json" or fn == ".cache":
         continue
     dst = os.path.join(OUT, fn)
-    if not os.path.exists(dst):
+    if not os.path.lexists(dst):
         os.symlink(os.path.join(P, fn), dst)
 # terminal gate: every shard referenced by the index must exist
 missing = [s for s in set(new_idx.values()) if not os.path.exists(os.path.join(OUT, s))]

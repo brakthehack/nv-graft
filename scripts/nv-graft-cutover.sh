@@ -34,9 +34,21 @@ tail -1 "$BUILD_LOG" | grep -q GRAFT_BUILD_DONE || { say "ABORT build not done";
 # gate 2: sanity verdict passed
 grep -q "VERDICT: GRAFT-SANE" "$SANITY_OUT" || { say "ABORT sanity not run/passed"; exit 1; }
 
-$SUDO cp "$UNIT" "$BACKUP" && say "unit backed up to $BACKUP"
+# Backup MUST land before we touch the unit — a failed cp here would leave the
+# sed below editing the live unit with no rollback copy (silently, because `&& say`
+# swallows the failure).
+$SUDO mkdir -p "$(dirname "$BACKUP")"
+$SUDO cp "$UNIT" "$BACKUP" || { say "ABORT backup copy failed ($BACKUP)"; exit 1; }
+say "unit backed up to $BACKUP"
 $SUDO sed -i "s|$OLD_PATH|$NEW_PATH|" "$UNIT"
-[ -n "${STRIP_FLAG:-}" ] && $SUDO sed -i "s|${STRIP_FLAG}||" "$UNIT"
+if [ -n "${STRIP_FLAG:-}" ]; then
+  # STRIP_FLAG must include the flag AND its value (e.g.
+  # "--expert-distribution-recorder-mode stat"). Stripping only the flag name
+  # strands the value as a positional continuation line ("stat \") and the
+  # server dies at boot — caught only by the rollback path, the expensive way.
+  grep -qF "$STRIP_FLAG" "$UNIT" || { say "ABORT STRIP_FLAG not found in unit: $STRIP_FLAG"; $SUDO cp "$BACKUP" "$UNIT"; $SUDO systemctl daemon-reload; exit 1; }
+  $SUDO sed -i "s|${STRIP_FLAG}||" "$UNIT"
+fi
 grep -q "$NEW_PATH" "$UNIT" || { say "ABORT sed did not land"; $SUDO cp "$BACKUP" "$UNIT"; exit 1; }
 say "unit edited: graft path${STRIP_FLAG:+ + flag stripped}"
 $SUDO systemctl daemon-reload

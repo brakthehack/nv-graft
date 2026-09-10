@@ -64,6 +64,8 @@ def prefill_run(tag, filler, reps):
     prompt = salt + " " + filler * reps
     ptoks = count_tokens(prompt)
     first, last, comp = stream({"ignore_eos": True}, prompt, max_tokens=8)
+    if first is None:
+        print(json.dumps({"tag": tag, "error": "no streamed tokens"})); sys.stdout.flush(); return
     print(json.dumps({"tag": tag, "prompt_tokens": ptoks, "ttft_s": round(first, 2),
                       "prefill_tok_s": round(ptoks / first, 1)}))
     sys.stdout.flush()
@@ -71,6 +73,8 @@ def prefill_run(tag, filler, reps):
 def decode_run(tag, thinking=False):
     first, last, comp = stream({"ignore_eos": True},
         "Count from 1 to 2000, one number per line.", max_tokens=512, thinking=thinking)
+    if first is None:
+        print(json.dumps({"tag": tag, "error": "no streamed tokens"})); sys.stdout.flush(); return
     dur = last - first
     print(json.dumps({"tag": tag, "completion_tokens": comp, "ttft_s": round(first, 2),
                       "decode_tok_s": round((comp - 1) / dur, 1) if dur > 0 else None}))
@@ -80,7 +84,7 @@ if __name__ == "__main__":
     # occupancy sanity: don't measure through someone else's generation
     try:
         m = urllib.request.urlopen(URL + "/metrics", timeout=10).read().decode()
-        run = [l for l in m.splitlines() if l.startswith("sglang:num_running_reqs{")]
+        run = [l for l in m.splitlines() if l.startswith("sglang:num_running_reqs")]
         print("occupancy:", run[0] if run else "?", file=sys.stderr)
     except Exception as e:
         print("metrics read failed:", e, file=sys.stderr)
