@@ -10,7 +10,7 @@
 - NIXL cache-tier backend config (fork-only): `configs/pennyroyal/nixl-posix.toml`
 - Live unit this ran on: `/etc/systemd/system/sglang-flashnext.service` (systemd, `Restart=on-failure`, HF offline mode, local compiler/HF cache dirs)
 
-**Support scope:** everything here is tested against exactly one checkpoint pair — nvidia's and primitive-ai's Qwen3.8-Flash-Next-NVFP4. Treat other models as unsupported until the sanity gate says otherwise; see the Scope note in the [main README](../README.md).
+**Support scope:** everything here is tested against exactly one checkpoint pair — nvidia's and primitive-ai's Qwen3.8-Flash-Next-NVFP4. Treat other models as unsupported until the sanity gate says otherwise; see the Scope note in the [main README](../README.md). Goal of the whole exercise: run **NVIDIA's official NVFP4 quant** of Qwen3.8-Flash-Next on an RTX PRO 6000 under [Pennyroyal](https://github.com/jpezzulli/sglang-rtxpro6000) without patching the fork.
 
 ## TL;DR
 
