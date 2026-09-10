@@ -45,3 +45,5 @@ Needs a python with `safetensors` + `torch`. Stop if the build doesn't end `GRAF
 - **[docs/graft-report.md](docs/graft-report.md)** — full writeup: the exact launch commands (pre/post), the checkpoint-diff finding with counts, build/sanity/cutover design, pitfalls, before/after benchmarks.
 - Health-gated systemd cutover with auto-rollback: [`scripts/nv-graft-cutover.sh`](scripts/nv-graft-cutover.sh) · before/after probe: [`scripts/perf_probe.py`](scripts/perf_probe.py).
 - Checkpoints: [nvidia/Qwen3.8-Flash-Next-NVFP4](https://huggingface.co/nvidia/Qwen3.8-Flash-Next-NVFP4) · [primitive-ai/Qwen3.8-Flash-Next-NVFP4](https://huggingface.co/primitive-ai/Qwen3.8-Flash-Next-NVFP4)
+
+*Fork versions: built and measured on the v2.3.0 (FR-Spec) line. Newer fork releases through v2.4.0 change nothing in the MTP/NEXTN load path — the per-expert dialect that forces the graft is still unsupported there — so the graft remains necessary and compatible.*
