@@ -131,11 +131,11 @@ python -m sglang.launch_server \
 Both repos claim to ship the same NVFP4 model. Their index key sets:
 
 - primitive-ai: 294,914 `.mlp.experts.*` keys
-- nvidia: 297,986 `.mlp.experts.*` keys
+- nvidia: 297,984 `.mlp.experts.*` keys
 
-The 294,912 overlapping keys are **byte-identical in geometry** — same dtypes, same shapes, same weight/scale-block triplet structure. This is what makes a graft possible: same quantization recipe, so NV's tensors are drop-in replacements in the skeleton's layout.
+The 294,912 overlapping keys are **byte-identical in geometry** — same dtypes, same shapes, same weight/scale-block triplet structure (a later audit diffed headers for **all** 294,912 overlap keys, not just samples: 0 mismatches). This is what makes a graft possible: same quantization recipe, so NV's tensors are drop-in replacements in the skeleton's layout.
 
-The disagreement is entirely the **MTP drafter layer** (`mtp.layers.0.mlp.experts.*`) — a layout philosophy difference, not corruption:
+The expert-set disagreement is the **MTP drafter layer** (`mtp.layers.0.mlp.experts.*`) — a layout philosophy difference, not corruption:
 
 | | primitive-ai | nvidia |
 |---|---|---|
@@ -143,6 +143,8 @@ The disagreement is entirely the **MTP drafter layer** (`mtp.layers.0.mlp.expert
 | Loads in our serving path (NEXTN spec-decode) | ✅ | ❌ (parser doesn't know the per-expert dialect there) |
 
 Keeping primitive-ai's fused MTP is the whole reason to graft instead of switching — the drafter powers speculative decode and we tuned our token map against it.
+
+(Honest footnote from a later full-set audit: "entirely" was too strong for the *whole-index* diff. Beyond the MTP expert keys, NV's index carries one extra key — `…ple_embedding.ngram_embedding.weight_scale` — and the layer-1 PLE ngram tables genuinely differ between the two (NV ships FP8 + a separate scale tensor; PA ships BF16 pre-scaled, hence PA 8.0 GB vs NV 4.0 GB per shard). The graft keeps the PA PLE dialect wholesale, which is also what our `--ple-offload-embedding` path expects. The expert-key story above stands unchanged.)
 
 **Lesson:** when comparing two checkpoints of "the same" model, diff the **key sets**, not just the geometry of sampled keys. Sampled-geometry equality proved the graft viable; it did *not* prove the sets symmetric — the first build attempt died on exactly the two keys nobody sampled (`KeyError: mtp.layers.0.mlp.experts.down_proj`). Start checkpoint surgery with a set-difference bucketed by prefix; the symmetric difference is the whole risk surface.
 
